@@ -4,17 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Application Assistant</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            width: 100%;
+        }
+        .form-label {
+            font-weight: bold;
+        }
+        #response {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Job Application Assistant</h1>
-    <form id="jobAssistantForm">
-        <label for="job_post">Job Posting:</label><br>
-        <textarea id="job_post" name="job_post" rows="4" cols="50" required></textarea><br><br>
+    <div class="container">
+        <h1 class="text-center mb-4">Job Application Assistant</h1>
+        <form id="jobAssistantForm" method="post" enctype="multipart/form-data">
+            <!-- Job Posting -->
+            <div class="mb-3">
+                <label for="job_post" class="form-label">Job Posting</label>
+                <textarea id="job_post" name="job_post" rows="4" class="form-control" placeholder="Paste the job posting here..." required></textarea>
+            </div>
 
-        <label for="resume">Your Resume:</label><br>
-        <textarea id="resume" name="resume" rows="4" cols="50" required></textarea><br><br>
+            <!-- Resume Upload -->
+            <div class="mb-3">
+                <label for="resume_file" class="form-label">Upload Your Resume (PDF only)</label>
+                <input type="file" id="resume_file" name="resume_file" accept=".pdf" class="form-control">
+            </div>
 
-        <label for="task">Choose Task:</label><br>
-        <select id="task" name="task" required>
-            <option value="analyze">Analyze Job Posting</option>
-            <opti
+            <!-- File Format -->
+            <div class="mb-3">
+                <label for="file_format" class="form-label">Choose File Format</label>
+                <select id="file_format" name="file_format" class="form-select" required>
+                    <option value="pdf">PDF</option>
+                    <option value="word">Word</option>
+                </select>
+            </div>
+
+            <!-- Task Selection -->
+            <div class="mb-3">
+                <label for="task" class="form-label">Choose Task</label>
+                <select id="task" name="task" class="form-select" required>
+                    <option value="analyze">Analyze Job Posting</option>
+                    <option value="tailor">Tailor Resume</option>
+                    <option value="interview">Prepare for Interview</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+        <div id="response" class="mt-4 text-center"></div>
+    </div>
+
+    <!-- Include Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const form = document.getElementById('jobAssistantForm');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Processing...</span></div>';
+
+            // Send form data to the backend
+            const response = await fetch('/process', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.error) {
+                // Display error messages
+                responseDiv.innerHTML = `<div class="alert alert-danger">${result.error}</div>`;
+            } else if (result.download_link) {
+                // Display download link for tailored resume
+                responseDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        Task completed successfully! <br>
+                        <a href="${result.download_link}" class="btn btn-success mt-3" download>Download Tailored Resume</a>
+                    </div>
+                `;
+            } else if (result.analysis) {
+                // Display analysis response
+                responseDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <h4>Analysis:</h4>
+                        <p>${result.analysis.replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+            } else if (result.interview_questions) {
+                // Display interview questions response
+                responseDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <h4>Interview Questions and Tips:</h4>
+                        <p>${result.interview_questions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+            } else {
+                // Handle unexpected responses
+                responseDiv.innerHTML = `<div class="alert alert-warning">Unexpected response: ${JSON.stringify(result)}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>
